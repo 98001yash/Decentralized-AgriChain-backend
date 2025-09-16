@@ -5,7 +5,7 @@ import com.company.Decentralized_AgriChain_backend.dtos.TransferProduceDto;
 
 import java.util.List;
 
-public interface ProductService {
+public interface ProduceService {
 
     ProduceDto addProduce(ProduceDto produceDto);
     ProduceDto getProduceById(Long id);
