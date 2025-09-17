@@ -2,6 +2,7 @@ package com.company.Decentralized_AgriChain_backend.controller;
 
 
 import com.company.Decentralized_AgriChain_backend.dtos.ProduceDto;
+import com.company.Decentralized_AgriChain_backend.dtos.ProduceHistoryDto;
 import com.company.Decentralized_AgriChain_backend.dtos.TransferProduceDto;
 import com.company.Decentralized_AgriChain_backend.service.ProduceService;
 import lombok.RequiredArgsConstructor;
@@ -55,5 +56,11 @@ public class ProduceController {
         List<ProduceDto> produces = produceService.getAllProduces(); // implement in service
         return ResponseEntity.ok(produces);
     }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<ProduceHistoryDto>> getProduceHistory(@PathVariable Long id) {
+        return ResponseEntity.ok(produceService.getProduceHistory(id));
+    }
+
 
 }

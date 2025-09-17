@@ -2,13 +2,16 @@ package com.company.Decentralized_AgriChain_backend.service.Impl;
 
 
 import com.company.Decentralized_AgriChain_backend.dtos.ProduceDto;
+import com.company.Decentralized_AgriChain_backend.dtos.ProduceHistoryDto;
 import com.company.Decentralized_AgriChain_backend.dtos.TransferProduceDto;
 import com.company.Decentralized_AgriChain_backend.enitites.Actor;
 import com.company.Decentralized_AgriChain_backend.enitites.Produce;
+import com.company.Decentralized_AgriChain_backend.enitites.ProduceHistory;
 import com.company.Decentralized_AgriChain_backend.enums.Role;
 import com.company.Decentralized_AgriChain_backend.enums.Status;
 import com.company.Decentralized_AgriChain_backend.exception.ResourceNotFoundException;
 import com.company.Decentralized_AgriChain_backend.repository.ActorRepository;
+import com.company.Decentralized_AgriChain_backend.repository.ProduceHistoryRepository;
 import com.company.Decentralized_AgriChain_backend.repository.ProduceRepository;
 import com.company.Decentralized_AgriChain_backend.service.ProduceService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +39,7 @@ public class ProduceServiceImpl implements ProduceService {
 
     private final ProduceRepository produceRepository;
     private final ActorRepository actorRepository;
+    private ProduceHistoryRepository produceHistoryRepository;
     private final ModelMapper modelMapper;
 
     private final Web3j web3j;
@@ -45,12 +49,14 @@ public class ProduceServiceImpl implements ProduceService {
     public ProduceServiceImpl(ProduceRepository produceRepository,
                               ActorRepository actorRepository,
                               ModelMapper modelMapper,
+                              ProduceHistoryRepository produceHistoryRepository,
                               @Value("${web3.rpcUrl}") String rpcUrl,
                               @Value("${web3.privateKey}") String privateKey,
                               @Value("${web3.contractAddress}") String contractAddress) {
         this.produceRepository = produceRepository;
         this.actorRepository = actorRepository;
         this.modelMapper = modelMapper;
+        this.produceHistoryRepository = produceHistoryRepository;
         this.web3j = Web3j.build(new HttpService(rpcUrl));
         this.credentials = Credentials.create(privateKey);
         this.contractAddress = contractAddress;
@@ -150,9 +156,8 @@ public class ProduceServiceImpl implements ProduceService {
             throw new ResourceNotFoundException("Produce is not owned by actor ID: " + fromActor.getId());
         }
 
+        // Update owner + status
         produce.setCurrentOwner(toActor);
-
-        // Update produce status
         switch (toActor.getRole()) {
             case DISTRIBUTOR -> produce.setStatus(Status.DISTRIBUTOR);
             case RETAILER -> produce.setStatus(Status.RETAILER);
@@ -160,9 +165,15 @@ public class ProduceServiceImpl implements ProduceService {
         }
 
         Produce saved = produceRepository.save(produce);
-        log.debug("Produce transferred: New owner ID: {}", saved.getCurrentOwner().getId());
 
-        // Blockchain transfer using raw function call
+        ProduceHistory history = new ProduceHistory();
+        history.setProduce(saved);
+        history.setFromActor(fromActor);
+        history.setToActor(toActor);
+        history.setTransferredAt(LocalDateTime.now());
+        produceHistoryRepository.save(history);
+
+        // Blockchain transfer (unchanged)
         try {
             String functionName = toActor.getRole() == Role.DISTRIBUTOR ? "transferToDistributor" : "transferToRetailer";
 
@@ -179,8 +190,8 @@ public class ProduceServiceImpl implements ProduceService {
 
             EthSendTransaction txResponse = web3j.ethSendTransaction(
                     Transaction.createFunctionCallTransaction(
-                            credentials.getAddress(),  // sender
-                            null,                     // nonce (let Web3j handle)
+                            credentials.getAddress(),
+                            null,
                             DefaultGasProvider.GAS_PRICE,
                             DefaultGasProvider.GAS_LIMIT,
                             contractAddress,
@@ -211,4 +222,24 @@ public class ProduceServiceImpl implements ProduceService {
                 .collect(Collectors.toList());
     }
 
+
+    // to Get the History of the Product
+    @Override
+    public List<ProduceHistoryDto> getProduceHistory(Long produceId) {
+        // Find the produce
+        Produce produce = produceRepository.findById(produceId)
+                .orElseThrow(() -> new RuntimeException("Produce not found with id: " + produceId));
+
+        // Fetch all history records for this produce
+        List<ProduceHistory> histories = produceHistoryRepository.findByProduce(produce);
+
+        // Map to DTOs
+        return histories.stream()
+                .map(h -> ProduceHistoryDto.builder()
+                        .fromActorName(h.getFromActor() != null ? h.getFromActor().getName() : "Origin")
+                        .toActorName(h.getToActor() != null ? h.getToActor().getName() : "Unknown")
+                        .transferredAt(h.getTransferredAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }

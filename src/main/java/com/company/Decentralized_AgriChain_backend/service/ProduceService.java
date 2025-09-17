@@ -1,6 +1,7 @@
 package com.company.Decentralized_AgriChain_backend.service;
 
 import com.company.Decentralized_AgriChain_backend.dtos.ProduceDto;
+import com.company.Decentralized_AgriChain_backend.dtos.ProduceHistoryDto;
 import com.company.Decentralized_AgriChain_backend.dtos.TransferProduceDto;
 
 import java.util.List;
@@ -13,4 +14,7 @@ public interface ProduceService {
     ProduceDto transferProduce(TransferProduceDto transferProduceDto);
 
     List<ProduceDto> getAllProduces();
+
+    List<ProduceHistoryDto> getProduceHistory(Long produceId);
+
 }
