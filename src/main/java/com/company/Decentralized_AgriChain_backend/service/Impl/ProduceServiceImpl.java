@@ -137,6 +137,136 @@ public class ProduceServiceImpl implements ProduceService {
                 .collect(Collectors.toList());
     }
 
+//    @Override
+//    public ProduceDto transferProduce(TransferProduceDto transferProduceDto) {
+//        log.info("Transferring produce ID {} from actor ID {} to actor ID {}",
+//                transferProduceDto.getProduceId(), transferProduceDto.getFromActorId(), transferProduceDto.getToActorId());
+//
+//        // Fetch produce and actors
+//        Produce produce = produceRepository.findById(transferProduceDto.getProduceId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Produce not found with ID: " + transferProduceDto.getProduceId()));
+//
+//        Actor fromActor = actorRepository.findById(transferProduceDto.getFromActorId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Sender not found with ID: " + transferProduceDto.getFromActorId()));
+//
+//        Actor toActor = actorRepository.findById(transferProduceDto.getToActorId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Receiver not found with ID: " + transferProduceDto.getToActorId()));
+//
+//        if (!produce.getCurrentOwner().getId().equals(fromActor.getId())) {
+//            throw new ResourceNotFoundException("Produce is not owned by actor ID: " + fromActor.getId());
+//        }
+//
+//        // Update owner + status
+//        produce.setCurrentOwner(toActor);
+//        switch (toActor.getRole()) {
+//            case DISTRIBUTOR -> produce.setStatus(Status.DISTRIBUTOR);
+//            case RETAILER -> produce.setStatus(Status.RETAILER);
+//            default -> produce.setStatus(Status.SOLD);
+//        }
+//
+//        Produce saved = produceRepository.save(produce);
+//
+//        ProduceHistory history = new ProduceHistory();
+//        history.setProduce(saved);
+//        history.setFromActor(fromActor);
+//        history.setToActor(toActor);
+//        history.setTransferredAt(LocalDateTime.now());
+//        produceHistoryRepository.save(history);
+//
+//        // Blockchain transfer (unchanged)
+//        try {
+//            String functionName = toActor.getRole() == Role.DISTRIBUTOR ? "transferToDistributor" : "transferToRetailer";
+//
+//            org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+//                    functionName,
+//                    List.of(
+//                            new Uint256(produce.getId()),
+//                            new Address(toActor.getWalletAddress())
+//                    ),
+//                    List.of()
+//            );
+//
+//            String encodedFunction = org.web3j.abi.FunctionEncoder.encode(function);
+//
+//            EthSendTransaction txResponse = web3j.ethSendTransaction(
+//                    Transaction.createFunctionCallTransaction(
+//                            credentials.getAddress(),
+//                            null,
+//                            DefaultGasProvider.GAS_PRICE,
+//                            DefaultGasProvider.GAS_LIMIT,
+//                            contractAddress,
+//                            encodedFunction
+//                    )
+//            ).send();
+//
+//            if (txResponse.hasError()) {
+//                log.error("Blockchain transaction failed: {}", txResponse.getError().getMessage());
+//                throw new RuntimeException("Blockchain transaction failed: " + txResponse.getError().getMessage());
+//            }
+//
+//            log.info("Produce transferred on blockchain, tx hash: {}", txResponse.getTransactionHash());
+//
+//        } catch (Exception e) {
+//            log.error("Error while transferring produce on blockchain", e);
+//            throw new RuntimeException("Blockchain integration failed: " + e.getMessage(), e);
+//        }
+//
+//        return modelMapper.map(saved, ProduceDto.class);
+//    }
+
+
+
+
+    @Override
+    public List<ProduceDto> getAllProduces() {
+        return produceRepository.findAll()
+                .stream()
+                .map(produce -> modelMapper.map(produce, ProduceDto.class))
+                .collect(Collectors.toList());
+    }
+
+
+    // to Get the History of the Product
+    @Override
+    public List<ProduceHistoryDto> getProduceHistory(Long produceId) {
+        Produce produce = produceRepository.findById(produceId)
+                .orElseThrow(() -> new RuntimeException("Produce not found with id: " + produceId));
+
+        List<ProduceHistory> histories = produceHistoryRepository.findByProduce(produce);
+
+        return histories.stream()
+                .map(h -> ProduceHistoryDto.builder()
+                        .fromActorName(h.getFromActor() != null ? h.getFromActor().getName() : "Origin")
+                        .toActorName(h.getToActor() != null ? h.getToActor().getName() : "Unknown")
+                        .transferredAt(h.getTransferredAt())
+                        .status(h.getStatus())
+                        .reason(h.getReason())
+                        .comments(h.getComments())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+
+    @Override
+    public long getTotalProducesCount() {
+        return produceRepository.count();
+    }
+
+    @Override
+    public long getProducesCountByStatus(Status status) {
+        return produceRepository.countByStatus(status);
+    }
+
+    @Override
+    public long getProducesCountByOwner(Long ownerId) {
+        Actor owner = actorRepository.findById(ownerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Owner not found"));
+        return produceRepository.countByCurrentOwner(owner);
+    }
+
+
+
+
     @Override
     public ProduceDto transferProduce(TransferProduceDto transferProduceDto) {
         log.info("Transferring produce ID {} from actor ID {} to actor ID {}",
@@ -166,11 +296,17 @@ public class ProduceServiceImpl implements ProduceService {
 
         Produce saved = produceRepository.save(produce);
 
-        ProduceHistory history = new ProduceHistory();
-        history.setProduce(saved);
-        history.setFromActor(fromActor);
-        history.setToActor(toActor);
-        history.setTransferredAt(LocalDateTime.now());
+        // --- Updated ProduceHistory with status, reason, comments ---
+        ProduceHistory history = ProduceHistory.builder()
+                .produce(saved)
+                .fromActor(fromActor)
+                .toActor(toActor)
+                .transferredAt(LocalDateTime.now())
+                .status(transferProduceDto.getStatus() != null ? transferProduceDto.getStatus() : produce.getStatus().name())
+                .reason(transferProduceDto.getReason() != null ? transferProduceDto.getReason() : "Regular Transfer")
+                .comments(transferProduceDto.getComments() != null ? transferProduceDto.getComments() : "")
+                .build();
+
         produceHistoryRepository.save(history);
 
         // Blockchain transfer (unchanged)
@@ -213,54 +349,4 @@ public class ProduceServiceImpl implements ProduceService {
 
         return modelMapper.map(saved, ProduceDto.class);
     }
-
-    @Override
-    public List<ProduceDto> getAllProduces() {
-        return produceRepository.findAll()
-                .stream()
-                .map(produce -> modelMapper.map(produce, ProduceDto.class))
-                .collect(Collectors.toList());
-    }
-
-
-    // to Get the History of the Product
-    @Override
-    public List<ProduceHistoryDto> getProduceHistory(Long produceId) {
-        Produce produce = produceRepository.findById(produceId)
-                .orElseThrow(() -> new RuntimeException("Produce not found with id: " + produceId));
-
-        List<ProduceHistory> histories = produceHistoryRepository.findByProduce(produce);
-
-        return histories.stream()
-                .map(h -> ProduceHistoryDto.builder()
-                        .fromActorName(h.getFromActor() != null ? h.getFromActor().getName() : "Origin")
-                        .toActorName(h.getToActor() != null ? h.getToActor().getName() : "Unknown")
-                        .transferredAt(h.getTransferredAt())
-                        .status(h.getStatus())
-                        .reason(h.getReason())
-                        .comments(h.getComments())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-
-
-
-    @Override
-    public long getTotalProducesCount() {
-        return produceRepository.count();
-    }
-
-    @Override
-    public long getProducesCountByStatus(Status status) {
-        return produceRepository.countByStatus(status);
-    }
-
-    @Override
-    public long getProducesCountByOwner(Long ownerId) {
-        Actor owner = actorRepository.findById(ownerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Owner not found"));
-        return produceRepository.countByCurrentOwner(owner);
-    }
-
 }

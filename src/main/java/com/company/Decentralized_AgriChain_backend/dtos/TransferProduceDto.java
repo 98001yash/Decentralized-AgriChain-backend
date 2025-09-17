@@ -15,4 +15,8 @@ public class TransferProduceDto {
     private Long produceId;   // which produce to transfer
     private Long fromActorId;   // sender actorId
     private Long toActorId;   // receiver actorIs
+
+    private String status;
+    private String reason;
+    private String comments;
 }
