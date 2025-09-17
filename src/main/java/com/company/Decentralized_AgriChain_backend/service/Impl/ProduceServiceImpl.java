@@ -226,22 +226,23 @@ public class ProduceServiceImpl implements ProduceService {
     // to Get the History of the Product
     @Override
     public List<ProduceHistoryDto> getProduceHistory(Long produceId) {
-        // Find the produce
         Produce produce = produceRepository.findById(produceId)
                 .orElseThrow(() -> new RuntimeException("Produce not found with id: " + produceId));
 
-        // Fetch all history records for this produce
         List<ProduceHistory> histories = produceHistoryRepository.findByProduce(produce);
 
-        // Map to DTOs
         return histories.stream()
                 .map(h -> ProduceHistoryDto.builder()
                         .fromActorName(h.getFromActor() != null ? h.getFromActor().getName() : "Origin")
                         .toActorName(h.getToActor() != null ? h.getToActor().getName() : "Unknown")
                         .transferredAt(h.getTransferredAt())
+                        .status(h.getStatus())
+                        .reason(h.getReason())
+                        .comments(h.getComments())
                         .build())
                 .collect(Collectors.toList());
     }
+
 
 
 

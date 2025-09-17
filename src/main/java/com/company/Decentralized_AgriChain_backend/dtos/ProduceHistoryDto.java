@@ -17,4 +17,8 @@ public class ProduceHistoryDto {
     private String fromActorName;
     private String toActorName;
     private LocalDateTime transferredAt;
+
+    private String status;
+    private String reason;
+    private String comments;
 }
