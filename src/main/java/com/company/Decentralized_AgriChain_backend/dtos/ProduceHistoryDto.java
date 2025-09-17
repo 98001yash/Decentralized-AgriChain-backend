@@ -22,8 +22,4 @@ public class ProduceHistoryDto {
     private String reason;
     private String comments;
 
-
-    private Double latitude;
-    private Double longitude;
-    private String blockchainTxHash;
 }

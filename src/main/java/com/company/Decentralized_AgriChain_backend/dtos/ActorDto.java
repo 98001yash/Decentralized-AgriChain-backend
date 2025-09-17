@@ -17,4 +17,6 @@ public class ActorDto {
     private String name;
     private Role role;
     private String walletAddress;
+
+
 }
