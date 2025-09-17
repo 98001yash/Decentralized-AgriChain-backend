@@ -17,5 +17,6 @@ public class ProduceDto {
     private String name;
     private String description;
     private Long currentOwnerId;
+    private Long quantity;
     private Status status;
 }

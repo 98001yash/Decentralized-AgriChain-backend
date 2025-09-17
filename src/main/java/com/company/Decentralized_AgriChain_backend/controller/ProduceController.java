@@ -47,4 +47,13 @@ public class ProduceController {
         ProduceDto updated = produceService.transferProduce(transferProduceDTO);
         return ResponseEntity.ok(updated);
     }
+
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ProduceDto>> getAllProduces() {
+        log.info("API request to get all produces");
+        List<ProduceDto> produces = produceService.getAllProduces(); // implement in service
+        return ResponseEntity.ok(produces);
+    }
+
 }

@@ -23,6 +23,7 @@ public class Produce {
     private String name;
 
     private String description;
+    private Long quantity;
 
     @ManyToOne
     @JoinColumn(name = "current_owner_id")

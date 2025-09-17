@@ -11,4 +11,6 @@ public interface ProduceService {
     ProduceDto getProduceById(Long id);
     List<ProduceDto> getProduceByOwner(Long actorId);
     ProduceDto transferProduce(TransferProduceDto transferProduceDto);
+
+    List<ProduceDto> getAllProduces();
 }
