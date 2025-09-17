@@ -37,4 +37,8 @@ public class ProduceHistory {
 
 
     private LocalDateTime transferredAt;
+
+    private String status;
+    private String reason;
+    private String comments;
 }
