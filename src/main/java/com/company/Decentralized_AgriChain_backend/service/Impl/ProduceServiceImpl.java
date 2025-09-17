@@ -242,4 +242,24 @@ public class ProduceServiceImpl implements ProduceService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+
+
+    @Override
+    public long getTotalProducesCount() {
+        return produceRepository.count();
+    }
+
+    @Override
+    public long getProducesCountByStatus(Status status) {
+        return produceRepository.countByStatus(status);
+    }
+
+    @Override
+    public long getProducesCountByOwner(Long ownerId) {
+        Actor owner = actorRepository.findById(ownerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Owner not found"));
+        return produceRepository.countByCurrentOwner(owner);
+    }
+
 }

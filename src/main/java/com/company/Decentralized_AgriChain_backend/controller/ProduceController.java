@@ -4,6 +4,7 @@ package com.company.Decentralized_AgriChain_backend.controller;
 import com.company.Decentralized_AgriChain_backend.dtos.ProduceDto;
 import com.company.Decentralized_AgriChain_backend.dtos.ProduceHistoryDto;
 import com.company.Decentralized_AgriChain_backend.dtos.TransferProduceDto;
+import com.company.Decentralized_AgriChain_backend.enums.Status;
 import com.company.Decentralized_AgriChain_backend.service.ProduceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,23 @@ public class ProduceController {
     public ResponseEntity<List<ProduceHistoryDto>> getProduceHistory(@PathVariable Long id) {
         return ResponseEntity.ok(produceService.getProduceHistory(id));
     }
+
+
+    @GetMapping("/count")
+    public ResponseEntity<Long> getTotalProducesCount() {
+        return ResponseEntity.ok(produceService.getTotalProducesCount());
+    }
+
+    @GetMapping("/count/status/{status}")
+    public ResponseEntity<Long> getProducesCountByStatus(@PathVariable Status status) {
+        return ResponseEntity.ok(produceService.getProducesCountByStatus(status));
+    }
+
+    @GetMapping("/count/owner/{ownerId}")
+    public ResponseEntity<Long> getProducesCountByOwner(@PathVariable Long ownerId) {
+        return ResponseEntity.ok(produceService.getProducesCountByOwner(ownerId));
+    }
+
 
 
 }

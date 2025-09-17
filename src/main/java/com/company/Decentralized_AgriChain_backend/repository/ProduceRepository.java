@@ -7,9 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface ProduceRepository extends JpaRepository<Produce,Long> {
+public interface ProduceRepository extends JpaRepository<Produce, Long> {
 
     List<Produce> findByCurrentOwner(Actor actor);
+    long countByStatus(Status status);
+    long countByCurrentOwner(Actor owner);
 
-    List<Produce> findByStatus(Status status);
 }

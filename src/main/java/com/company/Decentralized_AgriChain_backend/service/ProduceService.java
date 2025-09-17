@@ -3,6 +3,7 @@ package com.company.Decentralized_AgriChain_backend.service;
 import com.company.Decentralized_AgriChain_backend.dtos.ProduceDto;
 import com.company.Decentralized_AgriChain_backend.dtos.ProduceHistoryDto;
 import com.company.Decentralized_AgriChain_backend.dtos.TransferProduceDto;
+import com.company.Decentralized_AgriChain_backend.enums.Status;
 
 import java.util.List;
 
@@ -16,5 +17,10 @@ public interface ProduceService {
     List<ProduceDto> getAllProduces();
 
     List<ProduceHistoryDto> getProduceHistory(Long produceId);
+
+    long getTotalProducesCount();
+    long getProducesCountByStatus(Status status);
+    long getProducesCountByOwner(Long ownerId);
+
 
 }
